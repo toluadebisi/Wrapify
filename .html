@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppForge — Capacitor App Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+  :root{--bg:#08090e;--surface:#0f1117;--surface2:#151821;--surface3:#1c2030;--border:rgba(100,130,255,0.08);--border2:rgba(100,130,255,0.18);--accent:#4f6ef7;--accent2:#6d8cff;--accent3:#b4c6ff;--neon:#22d391;--amber:#f0a030;--red:#ef4444;--blue:#5b9fff;--text:#e8eaf0;--text2:#8b90a8;--text3:#50546e;--mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Outfit',sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(79,110,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,110,247,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .glow{position:fixed;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(79,110,247,0.08) 0%,transparent 70%);top:-350px;left:-200px;pointer-events:none;z-index:0;}
+  .glow2{position:fixed;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,145,0.05) 0%,transparent 70%);bottom:-200px;right:-100px;pointer-events:none;z-index:0;}
+  .app{position:relative;z-index:1;display:grid;grid-template-columns:280px 1fr;min-height:100vh;}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .logo-area{padding:22px 18px 16px;border-bottom:1px solid var(--border);}
+  .logo{font-family:var(--display);font-size:26px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--accent2),var(--neon));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .logo-sub{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px;letter-spacing:0.5px;}
+  .steps-nav{padding:10px 8px;flex:1;}
+  .step-group-label{font-size:9px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:1.5px;padding:12px 10px 4px;}
+  .step-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:1px;}
+  .step-item:hover{background:var(--surface2);}
+  .step-item.active{background:rgba(79,110,247,0.1);border-left:2px solid var(--accent);padding-left:8px;}
+  .step-item.done .step-num{background:rgba(34,211,145,0.12);border-color:rgba(34,211,145,0.3);color:var(--neon);}
+  .step-num{width:22px;height:22px;border-radius:6px;background:var(--surface3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--text3);flex-shrink:0;}
+  .step-item.active .step-num{background:rgba(79,110,247,0.15);border-color:var(--accent);color:var(--accent3);}
+  .step-item.done .step-num::after{content:'✓';font-size:10px;}
+  .step-item.done .step-num span{display:none;}
+  .step-label{font-size:12px;font-weight:500;color:var(--text2);}
+  .step-item.active .step-label{color:var(--text);font-weight:600;}
+  .sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);}
+  .progress-bar-wrap{height:3px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-bottom:6px;}
+  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--neon));border-radius:99px;transition:width .4s ease;}
+  .progress-label{font-size:10px;font-family:var(--mono);color:var(--text3);}
+  .main{padding:36px 48px;overflow-y:auto;}
+  .section{display:none;animation:fadeUp .2s ease;}
+  .section.active{display:block;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .section-header{margin-bottom:24px;}
+  .section-tag{font-family:var(--mono);font-size:10px;color:var(--neon);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .section-tag::before{content:'';display:inline-block;width:14px;height:1px;background:var(--neon);}
+  .section-title{font-family:var(--display);font-size:34px;font-weight:800;letter-spacing:-0.5px;line-height:1.1;margin-bottom:8px;}
+  .section-desc{font-size:13px;color:var(--text2);line-height:1.6;max-width:600px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  .form-grid.cols-1{grid-template-columns:1fr;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.span-2{grid-column:span 2;}
+  .field label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.3px;text-transform:uppercase;display:flex;align-items:center;gap:5px;}
+  .req{color:var(--neon);font-size:13px;}
+  .field input,.field select,.field textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:var(--sans);color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,110,247,0.1);}
+  .field input.valid{border-color:rgba(34,211,145,0.4);}
+  .field input.error{border-color:rgba(239,68,68,0.5);}
+  .field input::placeholder,.field textarea::placeholder{color:var(--text3);}
+  .field textarea{resize:vertical;min-height:80px;}
+  .field-hint{font-size:10px;color:var(--text3);font-family:var(--mono);}
+  .upload-zone{border:1.5px dashed var(--border2);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:var(--surface2);}
+  .upload-zone:hover{border-color:var(--accent);background:rgba(79,110,247,0.03);}
+  .upload-zone.has-file{border-color:rgba(34,211,145,0.4);background:rgba(34,211,145,0.03);}
+  .upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .upload-icon{font-size:24px;margin-bottom:6px;opacity:0.5;}
+  .upload-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+  .upload-sub{font-size:10px;color:var(--text3);font-family:var(--mono);}
+  .upload-status{font-size:11px;color:var(--neon);margin-top:5px;font-weight:600;}
+  .panel{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+  .panel-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:0.4px;}
+  .panel-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+  .icon-purple{background:rgba(79,110,247,0.15);}
+  .icon-green{background:rgba(34,211,145,0.12);}
+  .icon-amber{background:rgba(240,160,48,0.12);}
+  .admob-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .admob-platform-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .platform-pill{padding:2px 7px;border-radius:99px;font-size:9px;font-family:var(--mono);}
+  .android-pill{background:rgba(34,211,145,0.1);color:var(--neon);}
+  .ios-pill{background:rgba(91,159,255,0.1);color:var(--blue);}
+  .btn-row{display:flex;gap:10px;margin-top:24px;align-items:center;flex-wrap:wrap;}
+  .btn{padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:var(--sans);transition:all .15s;display:inline-flex;align-items:center;gap:6px;letter-spacing:0.2px;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(79,110,247,0.3);}
+  .btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--border2);color:var(--text);}
+  .btn-neon{background:rgba(34,211,145,0.1);color:var(--neon);border:1px solid rgba(34,211,145,0.3);}
+  .btn-neon:hover{background:rgba(34,211,145,0.18);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;}
+  .divider{height:1px;background:var(--border);margin:20px 0;}
+  .audit-list{display:flex;flex-direction:column;gap:6px;}
+  .audit-item{display:flex;align-items:center;gap:11px;padding:10px 14px;background:var(--surface3);border-radius:8px;border:1px solid var(--border);}
+  .audit-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+  .audit-ok{background:rgba(34,211,145,0.12);color:var(--neon);}
+  .audit-warn{background:rgba(240,160,48,0.12);color:var(--amber);}
+  .audit-fail{background:rgba(239,68,68,0.12);color:var(--red);}
+  .audit-text{font-size:12px;color:var(--text2);flex:1;}
+  .audit-sub{font-size:10px;color:var(--text3);font-family:var(--mono);}
+  .file-tree{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.8;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);max-height:260px;overflow-y:auto;}
+  .zip-success{background:rgba(34,211,145,0.03);border:1px solid rgba(34,211,145,0.15);border-radius:12px;padding:28px;text-align:center;}
+  .zip-icon{font-size:40px;margin-bottom:10px;}
+  .zip-title{font-family:var(--display);font-size:28px;font-weight:800;letter-spacing:-0.3px;color:var(--neon);margin-bottom:5px;}
+  .zip-sub{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5;}
+  .build-progress{margin-top:16px;}
+  .build-step{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:11px;color:var(--text3);font-family:var(--mono);}
+  .build-step.active{color:var(--neon);}
+  .build-step.done{color:var(--text2);}
+  .build-dot{width:7px;height:7px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);flex-shrink:0;}
+  .build-step.active .build-dot{background:var(--neon);border-color:var(--neon);box-shadow:0 0 6px rgba(34,211,145,0.4);}
+  .build-step.done .build-dot{background:var(--accent);border-color:var(--accent);}
+  .preview-panel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.7;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;}
+  .tree-highlight{color:var(--neon);}
+  .tree-dir{color:var(--accent2);}
+  .callout{border-radius:8px;padding:11px 14px;font-size:12px;line-height:1.5;margin-bottom:14px;}
+  .callout-info{background:rgba(91,159,255,0.06);border:1px solid rgba(91,159,255,0.15);color:var(--blue);}
+  .callout-warn{background:rgba(240,160,48,0.05);border:1px solid rgba(240,160,48,0.15);color:var(--amber);}
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:99px;}
+  code{font-family:var(--mono);font-size:11px;color:var(--accent2);background:rgba(79,110,247,0.08);padding:1px 4px;border-radius:3px;}
+  .file-preview-title{font-size:11px;font-family:var(--mono);color:var(--accent2);margin-top:12px;margin-bottom:3px;cursor:pointer;}
+  .file-preview-title:hover{color:var(--neon);}
+  .file-preview-panel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:10.5px;color:var(--text2);line-height:1.6;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;}
+  /* CAPABILITIES */
+  .cap-category{margin-bottom:20px;}
+  .cap-cat-header{display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;user-select:none;}
+  .cap-cat-header:hover .cap-cat-title{color:var(--text);}
+  .cap-cat-icon{font-size:18px;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--surface3);flex-shrink:0;}
+  .cap-cat-title{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text2);transition:color .15s;flex:1;}
+  .cap-cat-count{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--surface3);padding:2px 8px;border-radius:99px;}
+  .cap-cat-chevron{color:var(--text3);font-size:12px;transition:transform .2s;}
+  .cap-cat-chevron.open{transform:rotate(90deg);}
+  .cap-items{display:none;padding-left:42px;}
+  .cap-items.open{display:flex;flex-direction:column;gap:4px;}
+  .cap-item{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid transparent;transition:all .15s;cursor:pointer;}
+  .cap-item:hover{background:var(--surface2);border-color:var(--border);}
+  .cap-item.checked{background:rgba(34,211,145,0.03);border-color:rgba(34,211,145,0.12);}
+  .cap-item.locked{opacity:0.7;cursor:default;}
+  .cap-item.locked:hover{background:transparent;border-color:transparent;}
+  .cap-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:10px;transition:all .15s;background:var(--surface3);}
+  .cap-item.checked .cap-check{background:rgba(34,211,145,0.15);border-color:var(--neon);color:var(--neon);}
+  .cap-item.locked .cap-check{background:rgba(79,110,247,0.1);border-color:var(--accent);color:var(--accent2);}
+  .cap-info{flex:1;min-width:0;}
+  .cap-name{font-size:13px;font-weight:600;color:var(--text);}
+  .cap-desc{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4;}
+  .cap-pkg{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px;opacity:0.7;}
+  .cap-badges{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+  .cap-badge{font-family:var(--mono);font-size:8px;padding:1px 6px;border-radius:99px;}
+  .cap-badge-perm{background:rgba(240,160,48,0.08);color:var(--amber);border:1px solid rgba(240,160,48,0.15);}
+  .cap-badge-ios{background:rgba(91,159,255,0.08);color:var(--blue);border:1px solid rgba(91,159,255,0.12);}
+  .cap-counter-bar{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:18px;}
+  .cap-counter-num{font-family:var(--display);font-size:28px;font-weight:800;color:var(--neon);min-width:36px;}
+  .cap-counter-label{font-size:12px;color:var(--text2);}
+  .cap-counter-label strong{color:var(--text);}
+  .cap-search{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:var(--sans);color:var(--text);outline:none;width:100%;margin-bottom:16px;transition:border-color .15s;}
+  .cap-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,110,247,0.1);}
+  .cap-search::placeholder{color:var(--text3);}
+  /* ASO STEP */
+  .aso-model-toggle{display:flex;gap:4px;background:var(--surface3);border-radius:8px;padding:3px;margin-bottom:14px;width:fit-content;}
+  .aso-model-btn{padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:var(--sans);transition:all .15s;}
+  .aso-model-btn.active{background:var(--accent);color:#fff;}
+  .aso-platform-toggle{display:flex;gap:4px;background:var(--surface3);border-radius:8px;padding:3px;margin-bottom:14px;width:fit-content;}
+  .aso-platform-btn{padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:var(--sans);transition:all .15s;}
+  .aso-platform-btn.active{background:var(--neon);color:var(--bg);}
+  .aso-field{margin-bottom:16px;}
+  .aso-field-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+  .aso-field-label{font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.3px;}
+  .aso-char-count{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:99px;background:var(--surface3);}
+  .aso-char-ok{color:var(--neon);}
+  .aso-char-warn{color:var(--amber);}
+  .aso-char-over{color:var(--red);background:rgba(239,68,68,0.1);}
+  .aso-textarea{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:var(--sans);color:var(--text);outline:none;width:100%;resize:vertical;transition:border-color .15s;line-height:1.5;}
+  .aso-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,110,247,0.1);}
+  .aso-textarea.sm{min-height:36px;max-height:60px;}
+  .aso-textarea.md{min-height:60px;max-height:120px;}
+  .aso-textarea.lg{min-height:160px;max-height:400px;}
+  .aso-output-section{margin-top:20px;}
+  .aso-section-title{font-family:var(--display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .aso-gen-status{padding:14px;border-radius:8px;font-size:12px;font-family:var(--mono);margin-bottom:14px;display:none;}
+  .aso-gen-status.loading{display:block;background:rgba(79,110,247,0.06);border:1px solid rgba(79,110,247,0.15);color:var(--accent2);}
+  .aso-gen-status.error{display:block;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:var(--red);}
+  .aso-gen-status.done{display:block;background:rgba(34,211,145,0.06);border:1px solid rgba(34,211,145,0.15);color:var(--neon);}
+  .aso-qa{margin-top:16px;}
+  .aso-qa-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px;}
+  .aso-qa-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .aso-qa-pass{background:var(--neon);}
+  .aso-qa-fail{background:var(--red);}
+  .aso-copy-btn{padding:4px 12px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface3);color:var(--text2);font-family:var(--mono);transition:all .15s;}
+  .aso-copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .aso-key-field{position:relative;}
+  .aso-key-field input{padding-right:40px;}
+  .aso-key-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--text3);background:none;border:none;}
+  @keyframes asoSpin{to{transform:rotate(360deg)}}
+  .aso-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:asoSpin .6s linear infinite;margin-right:6px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div class="glow"></div><div class="glow2"></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo-area"><div class="logo">AppForge</div><div class="logo-sub">Capacitor Builder v6.0</div></div>
+    <nav class="steps-nav">
+      <div class="step-group-label">Setup</div>
+      <div class="step-item active" data-step="1" onclick="goToStep(1)"><div class="step-num"><span>1</span></div><div class="step-label">Template ZIP</div></div>
+      <div class="step-group-label">Identity</div>
+      <div class="step-item" data-step="2" onclick="goToStep(2)"><div class="step-num"><span>2</span></div><div class="step-label">App Identity</div></div>
+      <div class="step-item" data-step="3" onclick="goToStep(3)"><div class="step-num"><span>3</span></div><div class="step-label">Website URL</div></div>
+      <div class="step-group-label">Capabilities</div>
+      <div class="step-item" data-step="4" onclick="goToStep(4)"><div class="step-num"><span>4</span></div><div class="step-label">Plugins & Permissions</div></div>
+      <div class="step-group-label">Store Listings</div>
+      <div class="step-item" data-step="5" onclick="goToStep(5)"><div class="step-num"><span>5</span></div><div class="step-label">ASO & Metadata</div></div>
+      <div class="step-group-label">Monetization</div>
+      <div class="step-item" data-step="6" onclick="goToStep(6)"><div class="step-num"><span>6</span></div><div class="step-label">AdMob IDs</div></div>
+      <div class="step-group-label">Firebase & Auth</div>
+      <div class="step-item" data-step="7" onclick="goToStep(7)"><div class="step-num"><span>7</span></div><div class="step-label">Firebase Files</div></div>
+      <div class="step-group-label">Branding</div>
+      <div class="step-item" data-step="8" onclick="goToStep(8)"><div class="step-num"><span>8</span></div><div class="step-label">App Icon & Splash</div></div>
+      <div class="step-group-label">Validate & Build</div>
+      <div class="step-item" data-step="9" onclick="goToStep(9)"><div class="step-num"><span>9</span></div><div class="step-label">Validation Audit</div></div>
+      <div class="step-item" data-step="10" onclick="goToStep(10)"><div class="step-num"><span>10</span></div><div class="step-label">Build & Download</div></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:10%"></div></div>
+      <div class="progress-label" id="progressLabel">Step 1 of 10</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- STEP 1: Template -->
+    <section class="section active" id="step-1">
+      <div class="section-header"><div class="section-tag">Step 1 of 10 — Required</div><h1 class="section-title">Upload Template ZIP</h1><p class="section-desc">Upload the Capacitor template ZIP. AppForge extracts it, replaces all values with yours, and repackages a ready-to-build ZIP.</p></div>
+      <div class="callout callout-info">The ZIP must contain a <code>my-capacitor-app/</code> folder with <code>android/</code>, <code>ios/</code>, <code>src/</code>, <code>capacitor.config.ts</code>.</div>
+      <div class="form-grid cols-1"><div class="field"><label><span class="req">*</span> Template ZIP File</label><div class="upload-zone" id="templateZone"><input type="file" id="templateZipFile" accept=".zip" onchange="handleTemplateUpload(this)"><div class="upload-icon">📦</div><div class="upload-title">Drop your template .zip here</div><div class="upload-sub">or click to browse</div><div class="upload-status" id="templateStatus"></div></div></div></div>
+      <div id="templateInfo" style="display:none;"><div class="panel"><div class="panel-title"><div class="panel-icon icon-green">✓</div>Template Loaded</div><div id="templateDetails" class="file-tree"></div></div></div>
+      <div class="btn-row"><button class="btn btn-primary" id="step1Next" onclick="nextStep(1)" disabled>Continue →</button></div>
+    </section>
+
+    <!-- STEP 2: Identity -->
+    <section class="section" id="step-2">
+      <div class="section-header"><div class="section-tag">Step 2 of 10 — Required</div><h1 class="section-title">App Identity</h1><p class="section-desc">Package IDs, app name, and version across all native files.</p></div>
+      <div class="form-grid">
+        <div class="field"><label><span class="req">*</span> App Display Name</label><input type="text" id="appDisplayName" placeholder="e.g. My App"><span class="field-hint">Replaces "My Voicify"</span></div>
+        <div class="field"><label><span class="req">*</span> Android Package ID</label><input type="text" id="androidPackageId" placeholder="com.company.appname" oninput="validateField(this,/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){2,}$/)"><span class="field-hint">Replaces com.voicifyai.rcinc</span></div>
+        <div class="field"><label>Version Name</label><input type="text" id="versionName" placeholder="1.0.0" value="1.0"></div>
+        <div class="field"><label>Version Code</label><input type="number" id="versionCode" placeholder="1" value="1" min="1"></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(1)">← Back</button><button class="btn btn-primary" onclick="nextStep(2)">Save & Continue →</button></div>
+    </section>
+
+    <!-- STEP 3: URL -->
+    <section class="section" id="step-3">
+      <div class="section-header"><div class="section-tag">Step 3 of 10 — Required</div><h1 class="section-title">Website URL & Deep Links</h1><p class="section-desc">The HTTPS URL your app loads in the WebView, plus the signing fingerprint for Android App Links verification.</p></div>
+      <div class="form-grid cols-1">
+        <div class="field"><label><span class="req">*</span> Production Website URL</label><input type="url" id="websiteUrl" placeholder="https://app.yourdomain.com" oninput="validateUrl(this);updateAssetlinksPreview()"><span class="field-hint">Replaces https://app.myvoicify.app everywhere</span></div>
+      </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-title"><div class="panel-icon icon-green">🔗</div>Android App Links (assetlinks.json)</div>
+        <div class="callout callout-warn" style="margin-bottom:12px;">For Android to auto-open your app (instead of showing "Open with…" chooser), you <strong>must</strong> host an <code>assetlinks.json</code> file on your server. AppForge generates the file and injects <code>autoVerify="true"</code> into AndroidManifest.xml.</div>
+        <div class="form-grid cols-1">
+          <div class="field"><label><span class="req">*</span> SHA-256 Certificate Fingerprint</label><input type="text" id="sha256Fingerprint" placeholder="B5:05:28:79:F0:2C:AA:FB:BF:F4:80:D0:4D:3C:71:08:91:33:58:C4:FC:18:80:36:82:A6:3F:DC:82:D3:40:1D" oninput="validateSha256(this);updateAssetlinksPreview()" style="font-family:var(--mono);font-size:11px;"><span class="field-hint">Get this from: <code>keytool -list -v -keystore your-key.jks</code> → copy the SHA-256 line. For debug: <code>keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android</code></span></div>
+        </div>
+        <div id="assetlinksPreview" style="display:none;margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:11px;font-family:var(--mono);color:var(--accent2);" id="assetlinksUrl"></span>
+            <button class="aso-copy-btn" onclick="copyAssetlinks()">Copy JSON</button>
+          </div>
+          <div class="preview-panel" id="assetlinksJson" style="max-height:160px;"></div>
+          <div class="callout callout-info" style="margin-top:10px;">
+            <strong>⚠ Required server-side step:</strong> After downloading your ZIP, you must create this file on your web server at the exact URL shown above. The file must be served with <code>Content-Type: application/json</code>. Without this, Android App Links verification will fail.
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(2)">← Back</button><button class="btn btn-primary" onclick="nextStep(3)">Save & Continue →</button></div>
+    </section>
+
+    <!-- STEP 4: Capabilities -->
+    <section class="section" id="step-4">
+      <div class="section-header"><div class="section-tag">Step 4 of 10 — Customize</div><h1 class="section-title">Plugins & Permissions</h1><p class="section-desc">Select native capabilities. Checked plugins add npm deps, Android permissions, and iOS usage descriptions.</p></div>
+      <div class="callout callout-info">🔒 plugins are pre-installed. After downloading, run <code>npm install && npx cap sync</code>.</div>
+      <input type="text" class="cap-search" id="capSearch" placeholder="🔍  Search plugins…" oninput="filterCaps(this.value)">
+      <div class="cap-counter-bar"><div class="cap-counter-num" id="capCount">3</div><div class="cap-counter-label"><strong>plugins selected</strong> — <span id="capNewCount">0</span> new</div></div>
+      <div id="capList"></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(3)">← Back</button><button class="btn btn-primary" onclick="nextStep(4)">Save & Continue →</button></div>
+    </section>
+
+    <!-- STEP 5: ASO & METADATA (AI) -->
+    <section class="section" id="step-5">
+      <div class="section-header"><div class="section-tag">Step 5 of 10 — AI-Powered</div><h1 class="section-title">ASO & Store Listings</h1><p class="section-desc">Generate optimized App Store and Google Play metadata using AI. Your app name and URL are auto-imported from previous steps.</p></div>
+
+      <div class="panel">
+        <div class="panel-title"><div class="panel-icon icon-purple">🔑</div>AI API Key</div>
+        <div class="form-grid">
+          <div class="field"><label>Claude API Key</label><div class="aso-key-field"><input type="password" id="asoClaudeKey" placeholder="sk-ant-api03-…" oninput="saveAsoKeys()"><button class="aso-key-toggle" onclick="toggleKeyVis('asoClaudeKey',this)">👁</button></div><span class="field-hint">Stored in localStorage only</span></div>
+          <div class="field"><label>Gemini API Key</label><div class="aso-key-field"><input type="password" id="asoGeminiKey" placeholder="AIza…" oninput="saveAsoKeys()"><button class="aso-key-toggle" onclick="toggleKeyVis('asoGeminiKey',this)">👁</button></div><span class="field-hint">Optional — Google AI Studio key</span></div>
+        </div>
+        <div style="margin-top:8px;">
+          <div class="aso-model-toggle" id="asoModelToggle">
+            <button class="aso-model-btn active" data-model="claude" onclick="setAsoModel('claude')">Claude</button>
+            <button class="aso-model-btn" data-model="gemini" onclick="setAsoModel('gemini')">Gemini 2.5 Pro</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><div class="panel-icon icon-green">📝</div>App Details</div>
+        <div class="form-grid cols-1">
+          <div class="field"><label>App Name</label><input type="text" id="asoAppName" placeholder="Auto-filled from Step 2" readonly style="opacity:0.7;"><span class="field-hint">From Step 2 — edit there to change</span></div>
+          <div class="field"><label>Reference URL</label><input type="text" id="asoUrl" placeholder="Auto-filled from Step 3" readonly style="opacity:0.7;"><span class="field-hint">AI will analyze this page for features & benefits</span></div>
+          <div class="field"><label><span class="req">*</span> App Summary</label><textarea id="asoSummary" placeholder="Describe your app's core features, target audience, and unique value proposition. The more detail you provide, the better the AI output.&#10;&#10;Example: A voice-first productivity app that lets users capture notes, set reminders, and manage tasks using natural language voice commands. Built for busy professionals who prefer hands-free task management." style="min-height:100px;"></textarea></div>
+        </div>
+        <div style="margin-top:8px;">
+          <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px;display:block;">Target Platforms</label>
+          <div class="aso-platform-toggle">
+            <button class="aso-platform-btn active" data-plat="both" onclick="setAsoPlatform('both')">Both</button>
+            <button class="aso-platform-btn" data-plat="ios" onclick="setAsoPlatform('ios')">iOS Only</button>
+            <button class="aso-platform-btn" data-plat="android" onclick="setAsoPlatform('android')">Android Only</button>
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:12px;"><button class="btn btn-primary" id="asoGenBtn" onclick="generateASO()">🤖 Browse URL & Generate ASO</button></div>
+      </div>
+
+      <div class="aso-gen-status" id="asoStatus"></div>
+
+      <!-- iOS OUTPUT -->
+      <div class="aso-output-section" id="asoIosSection" style="display:none;">
+        <div class="aso-section-title"><span class="platform-pill ios-pill" style="font-size:11px;">iOS</span> Apple App Store Metadata <button class="aso-copy-btn" onclick="copyAsoSection('ios')">Copy All</button></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">App Name (max 30)</span><span class="aso-char-count" id="asoIosNameCount">0/30</span></div><textarea class="aso-textarea sm" id="asoIosName" oninput="updAsoCount('asoIosName',30,'asoIosNameCount')" placeholder="BrandName: Keyword"></textarea></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">Subtitle (max 30)</span><span class="aso-char-count" id="asoIosSubCount">0/30</span></div><textarea class="aso-textarea sm" id="asoIosSub" oninput="updAsoCount('asoIosSub',30,'asoIosSubCount')" placeholder="Benefit-driven secondary keywords"></textarea></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">Keyword Field (max 100)</span><span class="aso-char-count" id="asoIosKwCount">0/100</span></div><textarea class="aso-textarea md" id="asoIosKw" oninput="updAsoCount('asoIosKw',100,'asoIosKwCount')" placeholder="keyword1,keyword2,keyword3"></textarea><span class="field-hint">Comma-separated, no spaces, no duplicates from title/subtitle</span></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">Promotional Text (max 170)</span><span class="aso-char-count" id="asoIosPromoCount">0/170</span></div><textarea class="aso-textarea md" id="asoIosPromo" oninput="updAsoCount('asoIosPromo',170,'asoIosPromoCount')" placeholder="Action-oriented hook"></textarea></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">Description (max 4000)</span><span class="aso-char-count" id="asoIosDescCount">0/4000</span></div><textarea class="aso-textarea lg" id="asoIosDesc" oninput="updAsoCount('asoIosDesc',4000,'asoIosDescCount')" placeholder="Full App Store description"></textarea></div>
+      </div>
+
+      <!-- ANDROID OUTPUT -->
+      <div class="aso-output-section" id="asoAndroidSection" style="display:none;">
+        <div class="aso-section-title"><span class="platform-pill android-pill" style="font-size:11px;">Android</span> Google Play Metadata <button class="aso-copy-btn" onclick="copyAsoSection('android')">Copy All</button></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">App Title (max 30)</span><span class="aso-char-count" id="asoGpTitleCount">0/30</span></div><textarea class="aso-textarea sm" id="asoGpTitle" oninput="updAsoCount('asoGpTitle',30,'asoGpTitleCount')" placeholder="BrandName - Primary Keyword"></textarea></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">Short Description (max 80)</span><span class="aso-char-count" id="asoGpShortCount">0/80</span></div><textarea class="aso-textarea md" id="asoGpShort" oninput="updAsoCount('asoGpShort',80,'asoGpShortCount')" placeholder="Punchy keyword-rich pitch"></textarea></div>
+        <div class="aso-field"><div class="aso-field-header"><span class="aso-field-label">Long Description (max 4000)</span><span class="aso-char-count" id="asoGpLongCount">0/4000</span></div><textarea class="aso-textarea lg" id="asoGpLong" oninput="updAsoCount('asoGpLong',4000,'asoGpLongCount')" placeholder="Full Google Play description with HTML tags"></textarea></div>
+      </div>
+
+      <!-- QA -->
+      <div class="aso-qa" id="asoQaPanel" style="display:none;">
+        <div class="panel"><div class="panel-title"><div class="panel-icon icon-amber">✓</div>Quality Assurance</div><div id="asoQaList"></div></div>
+      </div>
+
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(4)">← Back</button><button class="btn btn-primary" onclick="nextStep(5)">Save & Continue →</button></div>
+    </section>
+
+    <!-- STEP 6: AdMob -->
+    <section class="section" id="step-6">
+      <div class="section-header"><div class="section-tag">Step 6 of 10 — Required for Ads</div><h1 class="section-title">AdMob Configuration</h1></div>
+      <div class="admob-cols">
+        <div><div class="admob-platform-title"><span class="platform-pill android-pill">Android</span></div>
+          <div class="field" style="margin-bottom:10px;"><label><span class="req">*</span> AdMob App ID</label><input type="text" id="admobAndroidAppId" placeholder="ca-app-pub-…~…"></div>
+          <div class="field" style="margin-bottom:10px;"><label><span class="req">*</span> Banner Ad Unit ID</label><input type="text" id="admobAndroidBanner" placeholder="ca-app-pub-…/…"></div>
+          <div class="field"><label><span class="req">*</span> Interstitial Ad Unit ID</label><input type="text" id="admobAndroidInterstitial" placeholder="ca-app-pub-…/…"></div>
+        </div>
+        <div><div class="admob-platform-title"><span class="platform-pill ios-pill">iOS</span></div>
+          <div class="field" style="margin-bottom:10px;"><label><span class="req">*</span> AdMob App ID</label><input type="text" id="admobIosAppId" placeholder="ca-app-pub-…~…"></div>
+          <div class="field" style="margin-bottom:10px;"><label><span class="req">*</span> Banner Ad Unit ID</label><input type="text" id="admobIosBanner" placeholder="ca-app-pub-…/…"></div>
+          <div class="field"><label><span class="req">*</span> Interstitial Ad Unit ID</label><input type="text" id="admobIosInterstitial" placeholder="ca-app-pub-…/…"></div>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(5)">← Back</button><button class="btn btn-primary" onclick="nextStep(6)">Save & Continue →</button></div>
+    </section>
+
+    <!-- STEP 7: Firebase -->
+    <section class="section" id="step-7">
+      <div class="section-header"><div class="section-tag">Step 7 of 10 — Required</div><h1 class="section-title">Firebase Files</h1></div>
+      <div class="form-grid">
+        <div class="field"><label><span class="req">*</span> google-services.json</label><div class="upload-zone" id="gsZone"><input type="file" id="googleServicesFile" accept=".json" onchange="handleFileUpload(this,'gsZone','gsStatus')"><div class="upload-icon">📄</div><div class="upload-title">Drop google-services.json</div><div class="upload-sub">or click to browse</div><div class="upload-status" id="gsStatus"></div></div></div>
+        <div class="field"><label><span class="req">*</span> GoogleService-Info.plist</label><div class="upload-zone" id="gpZone"><input type="file" id="googleServicesPlist" accept=".plist" onchange="handleFileUpload(this,'gpZone','gpStatus')"><div class="upload-icon">📋</div><div class="upload-title">Drop GoogleService-Info.plist</div><div class="upload-sub">or click to browse</div><div class="upload-status" id="gpStatus"></div></div></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(6)">← Back</button><button class="btn btn-primary" onclick="nextStep(7)">Save & Continue →</button></div>
+    </section>
+
+    <!-- STEP 8: Branding -->
+    <section class="section" id="step-8">
+      <div class="section-header"><div class="section-tag">Step 8 of 10 — Optional</div><h1 class="section-title">App Icon & Splash</h1></div>
+      <div class="form-grid">
+        <div class="field"><label>App Icon (1024×1024 PNG)</label><div class="upload-zone" id="iconZone"><input type="file" id="iconFile" accept="image/png" onchange="handleImageUpload(this,'iconZone','iconStatus','iconPreview')"><div class="upload-icon">🎨</div><div class="upload-title">Drop 1024×1024 PNG</div><div class="upload-sub">transparent bg ok</div><div class="upload-status" id="iconStatus"></div><img id="iconPreview" style="display:none;width:64px;height:64px;border-radius:12px;margin-top:8px;object-fit:cover;"></div></div>
+        <div class="field"><label>Splash (2732×2732 PNG)</label><div class="upload-zone" id="splashZone"><input type="file" id="splashFile" accept="image/png" onchange="handleImageUpload(this,'splashZone','splashStatus','splashPreview')"><div class="upload-icon">🖼</div><div class="upload-title">Drop 2732×2732 PNG</div><div class="upload-sub">centered logo</div><div class="upload-status" id="splashStatus"></div><img id="splashPreview" style="display:none;width:64px;height:64px;border-radius:8px;margin-top:8px;object-fit:cover;"></div></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(7)">← Back</button><button class="btn btn-primary" onclick="nextStep(8)">Save & Continue →</button></div>
+    </section>
+
+    <!-- STEP 9: Audit -->
+    <section class="section" id="step-9">
+      <div class="section-header"><div class="section-tag">Step 9 of 10 — Pre-flight</div><h1 class="section-title">Validation Audit</h1></div>
+      <div class="audit-list" id="auditList"></div>
+      <div id="auditSummary" style="margin-top:14px;padding:12px 16px;border-radius:8px;font-size:13px;display:none;"></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="goToStep(8)">← Back</button><button class="btn btn-neon" onclick="runAudit()">↻ Re-run</button><button class="btn btn-primary" id="buildBtn" onclick="goToStep(10)" disabled>Build ZIP →</button></div>
+    </section>
+
+    <!-- STEP 10: Build -->
+    <section class="section" id="step-10">
+      <div class="section-header"><div class="section-tag">Step 10 of 10 — Export</div><h1 class="section-title">Build & Download</h1></div>
+      <div class="zip-success">
+        <div class="zip-icon">📦</div><div class="zip-title">Generate Your Build</div>
+        <div class="zip-sub">All values injected. Java files relocated. Plugins, permissions, Firebase, branding, and ASO metadata applied.</div>
+        <button class="btn btn-neon" id="buildZipBtn" onclick="buildAndDownloadZip()" style="margin:0 auto;">⬇ Build & Download ZIP</button>
+        <div class="build-progress" id="buildProgress" style="display:none;text-align:left;margin-top:16px;"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="panel"><div class="panel-title"><div class="panel-icon icon-purple">📝</div>Modified Files Preview</div><div id="filePreviewArea"><div style="color:var(--text3);font-size:12px;font-family:var(--mono);">Click Build to generate.</div></div></div>
+
+      <div class="panel" id="assetlinksDeployPanel" style="display:none;">
+        <div class="panel-title"><div class="panel-icon icon-amber">🔗</div>⚠ REQUIRED: Deploy assetlinks.json</div>
+        <div class="callout callout-warn" style="margin-bottom:10px;">Android App Links will <strong>NOT work</strong> until you host this file on your server. Go to your hosting panel and create/replace the file at the URL below. It must be served with <code>Content-Type: application/json</code> and accessible over HTTPS with no redirects.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:12px;font-family:var(--mono);color:var(--neon);font-weight:600;" id="assetlinksDeployUrl"></span>
+          <button class="aso-copy-btn" onclick="copyDeployAssetlinks()">Copy JSON</button>
+        </div>
+        <div class="preview-panel" id="assetlinksDeployJson" style="max-height:140px;"></div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text3);font-family:var(--mono);line-height:1.6;">
+          <div>✓ File is also included in your ZIP at: <span style="color:var(--accent2);">public/.well-known/assetlinks.json</span></div>
+          <div>✓ Verify after deploying: <span style="color:var(--accent2);" id="assetlinksVerifyUrl"></span></div>
+          <div>✓ Google test tool: <span style="color:var(--accent2);">https://developers.google.com/digital-asset-links/tools/generator</span></div>
+        </div>
+      </div>
+
+      <div class="panel"><div class="panel-title"><div class="panel-icon icon-green">🚀</div>Post-Download</div>
+        <div class="file-tree">
+<span style="color:var(--neon);">unzip my-app-configured.zip && cd my-capacitor-app/</span>
+<span style="color:var(--neon);">npm install</span>
+<span style="color:var(--neon);">npm run build && npx cap sync</span>
+<span style="color:var(--neon);">npx capacitor-assets generate</span>
+<span style="color:var(--neon);">npx cap open android</span>
+<span style="color:var(--neon);">npx cap open ios</span>
+
+<span style="color:var(--amber);">⚠ Don't forget: Deploy assetlinks.json to your server!</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+// ============ STATE ============
+let currentStep=1;const totalSteps=10;const completedSteps=new Set();
+let templateZip=null;const uploadedFiles={};
+let asoModel='claude';let asoPlatform='both';let asoData={};
+
+// ============ TEMPLATE CONSTANTS ============
+const T={pkg:'com.voicifyai.rcinc',javaDir:'com/myvoicify/app',appName:'My Voicify',url:'https://app.myvoicify.app',host:'app.myvoicify.app',
+  admob:{android:{appId:'ca-app-pub-9689004813456541~8529388015',banner:'ca-app-pub-3940256099942544/6300978111',interstitial:'ca-app-pub-3940256099942544/1033173712'},
+  ios:{appId:'ca-app-pub-9689004813456541~3243378100',banner:'ca-app-pub-3940256099942544/6300978111',interstitial:'ca-app-pub-3940256099942544/1033173712'}}};
+
+// ============ CAPABILITIES ============
+const CAPS=[
+  {id:'camera',name:'Camera',desc:'Take photos or pick from gallery',pkg:'@capacitor/camera',ver:'^8.0.0',cat:'📷 Media & Camera',droid:['android.permission.CAMERA'],ios:[{k:'NSCameraUsageDescription',v:'Camera access needed.'},{k:'NSPhotoLibraryUsageDescription',v:'Photo library access needed.'},{k:'NSPhotoLibraryAddUsageDescription',v:'Save photos.'}],lock:false},
+  {id:'camera-preview',name:'Camera Preview',desc:'Live camera feed overlay',pkg:'@capacitor-community/camera-preview',ver:'^8.0.0',cat:'📷 Media & Camera',droid:['android.permission.CAMERA'],ios:[{k:'NSCameraUsageDescription',v:'Camera for live preview.'}],lock:false},
+  {id:'barcode-scanner',name:'Barcode Scanner',desc:'Scan QR/barcodes',pkg:'@capacitor/barcode-scanner',ver:'^8.0.0',cat:'📷 Media & Camera',droid:['android.permission.CAMERA'],ios:[{k:'NSCameraUsageDescription',v:'Camera for scanning.'}],lock:false},
+  {id:'native-audio',name:'Native Audio',desc:'Play audio natively',pkg:'@capacitor-community/native-audio',ver:'^7.0.0',cat:'📷 Media & Camera',droid:[],ios:[],lock:false},
+  {id:'geolocation',name:'Geolocation',desc:'GPS location',pkg:'@capacitor/geolocation',ver:'^8.0.0',cat:'📍 Location & Sensors',droid:['android.permission.ACCESS_FINE_LOCATION','android.permission.ACCESS_COARSE_LOCATION'],ios:[{k:'NSLocationWhenInUseUsageDescription',v:'Location needed.'},{k:'NSLocationAlwaysUsageDescription',v:'Background location.'}],lock:false},
+  {id:'motion',name:'Motion',desc:'Accelerometer/gyro',pkg:'@capacitor/motion',ver:'^8.0.0',cat:'📍 Location & Sensors',droid:[],ios:[{k:'NSMotionUsageDescription',v:'Motion sensors.'}],lock:false},
+  {id:'bluetooth-le',name:'Bluetooth LE',desc:'BLE connections',pkg:'@capacitor-community/bluetooth-le',ver:'^7.0.0',cat:'📍 Location & Sensors',droid:['android.permission.BLUETOOTH_SCAN','android.permission.BLUETOOTH_CONNECT','android.permission.BLUETOOTH_ADVERTISE'],ios:[{k:'NSBluetoothAlwaysUsageDescription',v:'Bluetooth for devices.'}],lock:false},
+  {id:'local-notifications',name:'Local Notifications',desc:'Schedule local notifs',pkg:'@capacitor/local-notifications',ver:'^8.0.0',cat:'🔔 Notifications',droid:['android.permission.POST_NOTIFICATIONS','android.permission.SCHEDULE_EXACT_ALARM'],ios:[],lock:false},
+  {id:'push-notifications',name:'Push Notifications',desc:'Remote push (FCM/APNs)',pkg:'@capacitor/push-notifications',ver:'^8.0.0',cat:'🔔 Notifications',droid:['android.permission.POST_NOTIFICATIONS'],ios:[],bgMode:'remote-notification',lock:false},
+  {id:'filesystem',name:'Filesystem',desc:'Read/write files',pkg:'@capacitor/filesystem',ver:'^8.0.0',cat:'📂 Storage & Files',droid:['android.permission.READ_EXTERNAL_STORAGE','android.permission.WRITE_EXTERNAL_STORAGE'],ios:[],lock:false},
+  {id:'preferences',name:'Preferences',desc:'Key-value storage',pkg:'@capacitor/preferences',ver:'^8.0.0',cat:'📂 Storage & Files',droid:[],ios:[],lock:false},
+  {id:'clipboard',name:'Clipboard',desc:'Copy/paste',pkg:'@capacitor/clipboard',ver:'^8.0.0',cat:'📂 Storage & Files',droid:[],ios:[],lock:false},
+  {id:'contacts',name:'Contacts',desc:'Device contacts',pkg:'@capacitor-community/contacts',ver:'^7.0.0',cat:'📂 Storage & Files',droid:['android.permission.READ_CONTACTS','android.permission.WRITE_CONTACTS'],ios:[{k:'NSContactsUsageDescription',v:'Contacts access.'}],lock:false},
+  {id:'browser',name:'Browser',desc:'System browser overlay',pkg:'@capacitor/browser',ver:'^8.0.0',cat:'🌐 Network & Browser',droid:[],ios:[],lock:false},
+  {id:'inappbrowser',name:'InAppBrowser',desc:'Embedded browser',pkg:'@capacitor/inappbrowser',ver:'^8.0.0',cat:'🌐 Network & Browser',droid:[],ios:[],lock:false},
+  {id:'network',name:'Network',desc:'Online/offline status',pkg:'@capacitor/network',ver:'^8.0.0',cat:'🌐 Network & Browser',droid:['android.permission.ACCESS_NETWORK_STATE'],ios:[],lock:false},
+  {id:'share',name:'Share',desc:'Native share sheet',pkg:'@capacitor/share',ver:'^8.0.0',cat:'🌐 Network & Browser',droid:[],ios:[],lock:false},
+  {id:'status-bar',name:'Status Bar',desc:'Status bar control',pkg:'@capacitor/status-bar',ver:'^8.0.2',cat:'🎨 UI & Display',droid:[],ios:[],lock:true},
+  {id:'splash-screen',name:'Splash Screen',desc:'Splash control',pkg:'@capacitor/splash-screen',ver:'^8.0.0',cat:'🎨 UI & Display',droid:[],ios:[],lock:false},
+  {id:'keyboard',name:'Keyboard',desc:'Keyboard control',pkg:'@capacitor/keyboard',ver:'^8.0.0',cat:'🎨 UI & Display',droid:[],ios:[],lock:false},
+  {id:'haptics',name:'Haptics',desc:'Vibration feedback',pkg:'@capacitor/haptics',ver:'^8.0.0',cat:'🎨 UI & Display',droid:['android.permission.VIBRATE'],ios:[],lock:false},
+  {id:'dialog',name:'Dialog',desc:'Native dialogs',pkg:'@capacitor/dialog',ver:'^8.0.0',cat:'🎨 UI & Display',droid:[],ios:[],lock:false},
+  {id:'toast',name:'Toast',desc:'Toast messages',pkg:'@capacitor/toast',ver:'^8.0.0',cat:'🎨 UI & Display',droid:[],ios:[],lock:false},
+  {id:'action-sheet',name:'Action Sheet',desc:'Bottom action sheet',pkg:'@capacitor/action-sheet',ver:'^8.0.0',cat:'🎨 UI & Display',droid:[],ios:[],lock:false},
+  {id:'screen-orientation',name:'Screen Orientation',desc:'Lock orientation',pkg:'@capacitor/screen-orientation',ver:'^8.0.0',cat:'🎨 UI & Display',droid:[],ios:[],lock:false},
+  {id:'privacy-screen',name:'Privacy Screen',desc:'Block recents preview',pkg:'@capacitor-community/privacy-screen',ver:'^7.0.0',cat:'🎨 UI & Display',droid:[],ios:[],lock:false},
+  {id:'keep-awake',name:'Keep Awake',desc:'Prevent screen sleep',pkg:'@capacitor-community/keep-awake',ver:'^6.0.0',cat:'🎨 UI & Display',droid:['android.permission.WAKE_LOCK'],ios:[],lock:false},
+  {id:'facebook-login',name:'Facebook Login',desc:'Facebook auth',pkg:'@capacitor-community/facebook-login',ver:'^7.0.0',cat:'🔐 Auth & Payments',droid:[],ios:[],lock:false},
+  {id:'apple-sign-in',name:'Apple Sign In',desc:'Sign in with Apple',pkg:'@capacitor-community/apple-sign-in',ver:'^7.0.0',cat:'🔐 Auth & Payments',droid:[],ios:[],lock:false},
+  {id:'stripe',name:'Stripe',desc:'Payment sheets',pkg:'@capacitor-community/stripe',ver:'^7.0.0',cat:'🔐 Auth & Payments',droid:[],ios:[],lock:false},
+  {id:'device',name:'Device',desc:'Device info/battery',pkg:'@capacitor/device',ver:'^8.0.0',cat:'📱 Device & System',droid:[],ios:[],lock:false},
+  {id:'app',name:'App',desc:'App state/URLs',pkg:'@capacitor/app',ver:'^8.0.0',cat:'📱 Device & System',droid:[],ios:[],lock:false},
+  {id:'app-launcher',name:'App Launcher',desc:'Open other apps',pkg:'@capacitor/app-launcher',ver:'^8.0.0',cat:'📱 Device & System',droid:[],ios:[],lock:false},
+  {id:'in-app-review',name:'In-App Review',desc:'Store rating prompt',pkg:'@capacitor-community/in-app-review',ver:'^7.0.0',cat:'📱 Device & System',droid:[],ios:[],lock:false},
+  {id:'text-to-speech',name:'Text-to-Speech',desc:'Speech synthesis',pkg:'@capacitor-community/text-to-speech',ver:'^5.0.0',cat:'📱 Device & System',droid:[],ios:[],lock:false},
+  {id:'background-runner',name:'Background Runner',desc:'Background JS tasks',pkg:'@capacitor/background-runner',ver:'^8.0.0',cat:'📱 Device & System',droid:[],ios:[],lock:false},
+  {id:'screen-reader',name:'Screen Reader',desc:'TalkBack/VoiceOver',pkg:'@capacitor/screen-reader',ver:'^8.0.0',cat:'♿ Accessibility',droid:[],ios:[],lock:false},
+  {id:'text-zoom',name:'Text Zoom',desc:'Text zoom pref',pkg:'@capacitor/text-zoom',ver:'^8.0.0',cat:'♿ Accessibility',droid:[],ios:[],lock:false},
+  {id:'admob',name:'AdMob',desc:'Banner & interstitial ads',pkg:'@capacitor-community/admob',ver:'^8.0.0',cat:'💰 Pre-installed',droid:[],ios:[],lock:true},
+  {id:'firebase-analytics',name:'Firebase Analytics',desc:'Event tracking',pkg:'@capacitor-community/firebase-analytics',ver:'^8.0.0',cat:'💰 Pre-installed',droid:[],ios:[],lock:true},
+];
+const selectedCaps=new Set();CAPS.forEach(c=>{if(c.lock)selectedCaps.add(c.id);});
+
+// ============ CAPABILITIES UI ============
+function buildCapUI(){const el=document.getElementById('capList');el.innerHTML='';const cats=[];const cm={};CAPS.forEach(c=>{if(!cm[c.cat]){cm[c.cat]=[];cats.push(c.cat);}cm[c.cat].push(c);});cats.forEach(cat=>{const items=cm[cat];const d=document.createElement('div');d.className='cap-category';d.dataset.cat=cat;const ck=items.filter(i=>selectedCaps.has(i.id)).length;const badges=c=>{const b=[];c.droid.forEach(p=>b.push(`<span class="cap-badge cap-badge-perm">${p.split('.').pop()}</span>`));c.ios.forEach(p=>b.push(`<span class="cap-badge cap-badge-ios">${p.k.replace('NS','').replace('UsageDescription','')}</span>`));if(c.bgMode)b.push(`<span class="cap-badge cap-badge-ios">BGMode:${c.bgMode}</span>`);return b.length?`<div class="cap-badges">${b.join('')}</div>`:''};d.innerHTML=`<div class="cap-cat-header" onclick="toggleCat(this)"><div class="cap-cat-icon">${cat.split(' ')[0]}</div><div class="cap-cat-title">${cat.split(' ').slice(1).join(' ')}</div><div class="cap-cat-count" data-cc="${cat}">${ck}/${items.length}</div><div class="cap-cat-chevron">▶</div></div><div class="cap-items">${items.map(c=>{const on=selectedCaps.has(c.id);return`<div class="cap-item ${on?'checked':''} ${c.lock?'locked':''}" data-id="${c.id}" onclick="toggleCap('${c.id}',this)"><div class="cap-check">${c.lock?'🔒':(on?'✓':'')}</div><div class="cap-info"><div class="cap-name">${c.name}</div><div class="cap-desc">${c.desc}</div><div class="cap-pkg">${c.pkg}@${c.ver}</div>${badges(c)}</div></div>`}).join('')}</div>`;el.appendChild(d);});updCapCount();}
+function toggleCat(h){h.querySelector('.cap-cat-chevron').classList.toggle('open');h.nextElementSibling.classList.toggle('open');}
+function toggleCap(id,el){const c=CAPS.find(x=>x.id===id);if(c.lock)return;if(selectedCaps.has(id)){selectedCaps.delete(id);el.classList.remove('checked');el.querySelector('.cap-check').textContent='';}else{selectedCaps.add(id);el.classList.add('checked');el.querySelector('.cap-check').textContent='✓';}updCapCount();}
+function updCapCount(){const t=selectedCaps.size,l=CAPS.filter(c=>c.lock).length;document.getElementById('capCount').textContent=t;document.getElementById('capNewCount').textContent=t-l;const cm={};CAPS.forEach(c=>{if(!cm[c.cat])cm[c.cat]={t:0,c:0};cm[c.cat].t++;if(selectedCaps.has(c.id))cm[c.cat].c++;});document.querySelectorAll('[data-cc]').forEach(e=>{const cat=e.dataset.cc;if(cm[cat])e.textContent=cm[cat].c+'/'+cm[cat].t;});}
+function filterCaps(q){q=q.toLowerCase().trim();document.querySelectorAll('.cap-category').forEach(d=>{let any=false;d.querySelectorAll('.cap-item').forEach(item=>{const c=CAPS.find(x=>x.id===item.dataset.id);const m=!q||c.name.toLowerCase().includes(q)||c.desc.toLowerCase().includes(q)||c.pkg.toLowerCase().includes(q)||c.cat.toLowerCase().includes(q);item.style.display=m?'':'none';if(m)any=true;});d.style.display=any?'':'none';if(q&&any){d.querySelector('.cap-cat-chevron').classList.add('open');d.querySelector('.cap-items').classList.add('open');}});}
+
+// ============ NAV ============
+function goToStep(n){document.getElementById('step-'+currentStep).classList.remove('active');document.getElementById('step-'+n).classList.add('active');document.querySelectorAll('.step-item').forEach(el=>{const s=+el.dataset.step;el.classList.remove('active');if(s===n)el.classList.add('active');el.classList.toggle('done',completedSteps.has(s));});currentStep=n;updProgress();if(n===5)syncAsoInputs();if(n===9)runAudit();}
+function nextStep(f){completedSteps.add(f);goToStep(f+1);}
+function updProgress(){document.getElementById('progressFill').style.width=Math.round((currentStep/totalSteps)*100)+'%';document.getElementById('progressLabel').textContent='Step '+currentStep+' of '+totalSteps;}
+
+// ============ FORM HELPERS ============
+function val(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+function validateField(i,r){const v=i.value.trim();i.className=v?(r.test(v)?'valid':'error'):'';}
+function validateUrl(i){const v=i.value.trim();try{i.className=new URL(v).protocol==='https:'?'valid':'error';}catch{i.className=v?'error':'';}}
+function validateSha256(i){const v=i.value.trim();const valid=/^([0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}$/.test(v);i.className=v?(valid?'valid':'error'):'';}
+function getAssetlinksJson(){
+  const pkg=val('androidPackageId')||'com.example.app';
+  const sha=val('sha256Fingerprint')||'XX:XX:...';
+  return JSON.stringify([{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":pkg,"sha256_cert_fingerprints":[sha]}}],null,2);
+}
+function updateAssetlinksPreview(){
+  const url=val('websiteUrl');const sha=val('sha256Fingerprint');
+  const panel=document.getElementById('assetlinksPreview');
+  if(url&&sha){
+    panel.style.display='block';
+    let host;try{host=new URL(url).hostname;}catch{host='your-domain.com';}
+    document.getElementById('assetlinksUrl').textContent='https://'+host+'/.well-known/assetlinks.json';
+    document.getElementById('assetlinksJson').textContent=getAssetlinksJson();
+  }else{panel.style.display='none';}
+}
+function copyAssetlinks(){navigator.clipboard.writeText(getAssetlinksJson()).then(()=>{const b=document.querySelector('#assetlinksPreview .aso-copy-btn');b.textContent='✓ Copied!';setTimeout(()=>b.textContent='Copy JSON',1500);});}
+function copyDeployAssetlinks(){const t=document.getElementById('assetlinksDeployJson').textContent;navigator.clipboard.writeText(t).then(()=>{const b=document.querySelector('#assetlinksDeployPanel .aso-copy-btn');b.textContent='✓ Copied!';setTimeout(()=>b.textContent='Copy JSON',1500);});}
+function handleFileUpload(input,zoneId,statusId){const f=input.files[0];if(!f)return;document.getElementById(zoneId).classList.add('has-file');document.getElementById(statusId).textContent='✓ '+f.name;const r=new FileReader();r.onload=e=>{uploadedFiles[input.id]={name:f.name,data:e.target.result};};r.readAsArrayBuffer(f);}
+function handleImageUpload(input,zoneId,statusId,previewId){const f=input.files[0];if(!f)return;document.getElementById(zoneId).classList.add('has-file');const br=new FileReader();br.onload=e=>{uploadedFiles[input.id]={name:f.name,data:e.target.result};};br.readAsArrayBuffer(f);const r=new FileReader();r.onload=e=>{const p=document.getElementById(previewId);p.src=e.target.result;p.style.display='block';const img=new Image();img.onload=()=>{document.getElementById(statusId).textContent=(img.width>=512?'✓ ':'⚠ ')+img.width+'×'+img.height;document.getElementById(statusId).style.color=img.width>=512?'var(--neon)':'var(--amber)';};img.src=e.target.result;};r.readAsDataURL(f);}
+async function handleTemplateUpload(input){const f=input.files[0];if(!f)return;document.getElementById('templateZone').classList.add('has-file');document.getElementById('templateStatus').textContent='⟳ Loading…';try{templateZip=await JSZip.loadAsync(await f.arrayBuffer());const paths=Object.keys(templateZip.files).filter(p=>!p.startsWith('__MACOSX')&&!templateZip.files[p].dir);const keys=['capacitor.config.ts','package.json','src/config/appConfig.ts','android/app/build.gradle','android/app/src/main/AndroidManifest.xml','android/app/src/main/res/values/strings.xml'];const found=keys.filter(k=>paths.some(p=>p.endsWith(k)));document.getElementById('templateStatus').textContent='✓ '+f.name+' — '+paths.length+' files';document.getElementById('templateInfo').style.display='block';document.getElementById('templateDetails').innerHTML='<div style="color:var(--neon)">✓ Loaded</div><div>Files: <span class="tree-highlight">'+paths.length+'</span> | Key: <span class="tree-highlight">'+found.length+'/'+keys.length+'</span></div>';document.getElementById('step1Next').disabled=false;}catch(e){document.getElementById('templateStatus').textContent='✗ '+e.message;document.getElementById('templateStatus').style.color='var(--red)';}}
+
+// ============ ASO ENGINE ============
+function syncAsoInputs(){document.getElementById('asoAppName').value=val('appDisplayName');document.getElementById('asoUrl').value=val('websiteUrl');}
+function toggleKeyVis(id,btn){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';btn.textContent=i.type==='password'?'👁':'🙈';}
+function saveAsoKeys(){try{localStorage.setItem('appforge_claude_key',val('asoClaudeKey'));localStorage.setItem('appforge_gemini_key',val('asoGeminiKey'));}catch{}}
+function loadAsoKeys(){try{const c=localStorage.getItem('appforge_claude_key');const g=localStorage.getItem('appforge_gemini_key');if(c)document.getElementById('asoClaudeKey').value=c;if(g)document.getElementById('asoGeminiKey').value=g;}catch{}}
+function setAsoModel(m){asoModel=m;document.querySelectorAll('.aso-model-btn').forEach(b=>b.classList.toggle('active',b.dataset.model===m));}
+function setAsoPlatform(p){asoPlatform=p;document.querySelectorAll('.aso-platform-btn').forEach(b=>b.classList.toggle('active',b.dataset.plat===p));}
+function updAsoCount(fieldId,max,countId){const v=document.getElementById(fieldId).value;const n=v.length;const el=document.getElementById(countId);el.textContent=n+'/'+max;el.className='aso-char-count '+(n>max?'aso-char-over':(n>max*0.9?'aso-char-warn':'aso-char-ok'));}
+
+function getAsoSystemPrompt(){
+  const appName=val('asoAppName');const summary=val('asoSummary');const url=val('asoUrl');
+  const platLabel=asoPlatform==='both'?'Both iOS and Google Play':asoPlatform==='ios'?'iOS':'Google Play';
+  return `You are an elite Mobile Growth Stack Engineer and App Store Optimization (ASO) specialist. Your objective is to engineer high-converting, keyword-dense ASO metadata for ${platLabel} that organically ranks in the top 1% of its niche.
+
+Analyze the following input data thoroughly before writing:
+- App Name: ${appName}
+- App Summary: ${summary}
+- Reference URL: ${url} (analyze this URL's content for additional features, user benefits, and technical details)
+
+### PHASE 1: KEYWORD ARCHITECTURE & COMPETITIVE INTELLIGENCE
+1. Identify the core niche based on the inputs and URL.
+2. Brainstorm a list of 20 high-intent, high-volume semantic keywords and long-tail phrases split into: Core Features, Problem-Solving, and Audience Persona terms.
+3. Organize these keywords by search intent.
+
+### PHASE 2: METADATA ENGINEERING (PLATFORM-SPECIFIC COMPLIANCE)
+${(asoPlatform==='ios'||asoPlatform==='both')?`
+[iOS - Apple App Store]
+Generate these fields strictly adhering to Apple character limits:
+- App Name (Max 30 chars): Format as [Brand Name]: [High-Volume Seed Keyword]. Do not exceed 30 characters.
+- Subtitle (Max 30 chars): Benefit-driven phrase using secondary keywords. Do not repeat words from the App Name.
+- Backend Keyword Field (Max 100 chars): Single unbroken string of keywords. Format: lowercase, separated strictly by commas, NO spaces, NO duplicate words from Title/Subtitle, singular forms only.
+- Promotional Text (Max 170 chars): High-converting, action-oriented hook.
+- App Description (Max 4,000 chars): Written for human conversion. Use ALL-CAPS headers, bullet points, clean line breaks. Front-load value in first 3 lines. No HTML.
+`:''}
+${(asoPlatform==='android'||asoPlatform==='both')?`
+[Google Play Store]
+Generate these fields adhering to Google Play indexing rules:
+- App Title (Max 30 chars): [Brand Name] + [Primary Keyword]. No spammy words.
+- Short Description (Max 80 chars): Punchy, keyword-optimized hook.
+- Long Description (Max 4,000 chars): Maintain 2-3% keyword density for top 3 keywords. Front-load keywords in first 3 sentences. Use HTML tags (<b>, <i>, <ul>, <li>). Structure: 1) Hook, 2) Key Features, 3) Why Choose Us, 4) Target Audience.
+`:''}
+
+### PHASE 3: QUALITY ASSURANCE
+- Provide exact character count for each constrained field.
+- Confirm NO keywords repeated across iOS Title, Subtitle, and Keyword field.
+- Verify Google Play density is natural.
+
+CRITICAL OUTPUT FORMAT: You MUST respond with ONLY a valid JSON object (no markdown, no backticks, no preamble). Use this exact structure:
+{
+${(asoPlatform==='ios'||asoPlatform==='both')?`"ios": {"appName": "...", "subtitle": "...", "keywordField": "...", "promotionalText": "...", "description": "..."},`:''}
+${(asoPlatform==='android'||asoPlatform==='both')?`"android": {"appTitle": "...", "shortDescription": "...", "longDescription": "..."},`:''}
+"keywords": ["keyword1", "keyword2", "..."],
+"qaReport": {"iosNameChars": 0, "iosSubChars": 0, "iosKwChars": 0, "gpTitleChars": 0, "gpShortChars": 0, "duplicatesFound": false, "notes": "..."}
+}`;
+}
+
+async function callClaude(prompt){
+  const key=val('asoClaudeKey');
+  if(!key)throw new Error('Claude API key is required');
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:prompt}]})
+  });
+  if(!res.ok){const e=await res.text();throw new Error('Claude API error: '+res.status+' — '+e);}
+  const data=await res.json();
+  return data.content.map(b=>b.text||'').join('');
+}
+
+async function callGemini(prompt){
+  const key=val('asoGeminiKey');
+  if(!key)throw new Error('Gemini API key is required');
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${key}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:4096}})
+  });
+  if(!res.ok){const e=await res.text();throw new Error('Gemini API error: '+res.status+' — '+e);}
+  const data=await res.json();
+  return data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
+}
+
+async function generateASO(){
+  const status=document.getElementById('asoStatus');
+  const btn=document.getElementById('asoGenBtn');
+  if(!val('asoSummary')){status.className='aso-gen-status error';status.textContent='Please write an app summary first.';return;}
+
+  btn.disabled=true;btn.textContent='⟳ Generating…';
+  status.className='aso-gen-status loading';
+  status.innerHTML='<span class="aso-spinner"></span>Calling '+asoModel+' API… Analyzing your app URL and generating optimized ASO metadata. This may take 15-30 seconds.';
+
+  try{
+    const prompt=getAsoSystemPrompt();
+    let raw;
+    if(asoModel==='claude') raw=await callClaude(prompt);
+    else raw=await callGemini(prompt);
+
+    // Parse JSON from response
+    let cleaned=raw.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+    // Find first { and last }
+    const fi=cleaned.indexOf('{');const li=cleaned.lastIndexOf('}');
+    if(fi===-1||li===-1)throw new Error('No JSON found in response');
+    cleaned=cleaned.substring(fi,li+1);
+    const data=JSON.parse(cleaned);
+    asoData=data;
+
+    // Populate iOS fields
+    if(data.ios){
+      document.getElementById('asoIosName').value=data.ios.appName||'';
+      document.getElementById('asoIosSub').value=data.ios.subtitle||'';
+      document.getElementById('asoIosKw').value=data.ios.keywordField||'';
+      document.getElementById('asoIosPromo').value=data.ios.promotionalText||'';
+      document.getElementById('asoIosDesc').value=data.ios.description||'';
+      ['asoIosName,30,asoIosNameCount','asoIosSub,30,asoIosSubCount','asoIosKw,100,asoIosKwCount','asoIosPromo,170,asoIosPromoCount','asoIosDesc,4000,asoIosDescCount'].forEach(s=>{const[a,b,c]=s.split(',');updAsoCount(a,+b,c);});
+      document.getElementById('asoIosSection').style.display='block';
+    }
+    // Populate Android fields
+    if(data.android){
+      document.getElementById('asoGpTitle').value=data.android.appTitle||'';
+      document.getElementById('asoGpShort').value=data.android.shortDescription||'';
+      document.getElementById('asoGpLong').value=data.android.longDescription||'';
+      ['asoGpTitle,30,asoGpTitleCount','asoGpShort,80,asoGpShortCount','asoGpLong,4000,asoGpLongCount'].forEach(s=>{const[a,b,c]=s.split(',');updAsoCount(a,+b,c);});
+      document.getElementById('asoAndroidSection').style.display='block';
+    }
+
+    // QA
+    runAsoQA(data);
+    status.className='aso-gen-status done';
+    status.textContent='✓ ASO metadata generated successfully via '+asoModel+'. All fields are editable — tweak as needed.';
+  }catch(e){
+    status.className='aso-gen-status error';
+    status.textContent='✗ '+e.message;
+  }
+  btn.disabled=false;btn.textContent='🤖 Browse URL & Generate ASO';
+}
+
+function runAsoQA(data){
+  const panel=document.getElementById('asoQaPanel');panel.style.display='block';
+  const list=document.getElementById('asoQaList');list.innerHTML='';
+  const checks=[];
+
+  if(data.ios){
+    const n=(data.ios.appName||'').length;checks.push({ok:n<=30,text:`iOS App Name: ${n}/30 chars`});
+    const s=(data.ios.subtitle||'').length;checks.push({ok:s<=30,text:`iOS Subtitle: ${s}/30 chars`});
+    const k=(data.ios.keywordField||'').length;checks.push({ok:k<=100,text:`iOS Keywords: ${k}/100 chars`});
+    const p=(data.ios.promotionalText||'').length;checks.push({ok:p<=170,text:`iOS Promo: ${p}/170 chars`});
+    const d=(data.ios.description||'').length;checks.push({ok:d<=4000,text:`iOS Description: ${d}/4000 chars`});
+    // Check keyword duplication
+    const titleWords=new Set((data.ios.appName||'').toLowerCase().split(/\W+/));
+    const subWords=new Set((data.ios.subtitle||'').toLowerCase().split(/\W+/));
+    const kwWords=(data.ios.keywordField||'').toLowerCase().split(',');
+    const dupes=kwWords.filter(w=>w&&(titleWords.has(w)||subWords.has(w)));
+    checks.push({ok:dupes.length===0,text:dupes.length===0?'No keyword duplication across title/subtitle/keywords':'Duplicated keywords found: '+dupes.join(', ')});
+    // No spaces in keyword field
+    const hasSpaces=/\s/.test(data.ios.keywordField||'');
+    checks.push({ok:!hasSpaces,text:hasSpaces?'⚠ Keyword field contains spaces — remove them':'Keyword field formatting correct (no spaces)'});
+  }
+  if(data.android){
+    const t=(data.android.appTitle||'').length;checks.push({ok:t<=30,text:`GP Title: ${t}/30 chars`});
+    const s=(data.android.shortDescription||'').length;checks.push({ok:s<=80,text:`GP Short Desc: ${s}/80 chars`});
+    const l=(data.android.longDescription||'').length;checks.push({ok:l<=4000,text:`GP Long Desc: ${l}/4000 chars`});
+  }
+
+  checks.forEach(c=>{const d=document.createElement('div');d.className='aso-qa-item';d.innerHTML=`<div class="aso-qa-dot ${c.ok?'aso-qa-pass':'aso-qa-fail'}"></div><span style="color:${c.ok?'var(--text2)':'var(--red)'}">${c.text}</span>`;list.appendChild(d);});
+}
+
+function copyAsoSection(platform){
+  let text='';
+  if(platform==='ios'){
+    text=`=== iOS App Store Metadata ===\n\nApp Name: ${val('asoIosName')}\nSubtitle: ${val('asoIosSub')}\nKeyword Field: ${val('asoIosKw')}\nPromotional Text: ${val('asoIosPromo')}\n\nDescription:\n${val('asoIosDesc')}`;
+  }else{
+    text=`=== Google Play Metadata ===\n\nApp Title: ${val('asoGpTitle')}\nShort Description: ${val('asoGpShort')}\n\nLong Description:\n${val('asoGpLong')}`;
+  }
+  navigator.clipboard.writeText(text).then(()=>{const btns=document.querySelectorAll('.aso-copy-btn');btns.forEach(b=>{if(b.textContent.includes(platform==='ios'?'iOS':'Android')||b.closest('#aso'+(platform==='ios'?'Ios':'Android')+'Section')){b.textContent='✓ Copied!';setTimeout(()=>b.textContent='Copy All',1500);}});});
+}
+
+function getAsoMetadataJson(){
+  const d={};
+  if(val('asoIosName'))d.ios={appName:val('asoIosName'),subtitle:val('asoIosSub'),keywordField:val('asoIosKw'),promotionalText:val('asoIosPromo'),description:val('asoIosDesc')};
+  if(val('asoGpTitle'))d.android={appTitle:val('asoGpTitle'),shortDescription:val('asoGpShort'),longDescription:val('asoGpLong')};
+  return d;
+}
+function getAsoMetadataMd(){
+  let md='# ASO Metadata\n\nGenerated by AppForge v6.0\n\n';
+  if(val('asoIosName')){md+=`## Apple App Store (iOS)\n\n**App Name:** ${val('asoIosName')}\n**Subtitle:** ${val('asoIosSub')}\n**Keyword Field:** ${val('asoIosKw')}\n**Promotional Text:** ${val('asoIosPromo')}\n\n### Description\n\n${val('asoIosDesc')}\n\n---\n\n`;}
+  if(val('asoGpTitle')){md+=`## Google Play Store (Android)\n\n**App Title:** ${val('asoGpTitle')}\n**Short Description:** ${val('asoGpShort')}\n\n### Long Description\n\n${val('asoGpLong')}\n`;}
+  return md;
+}
+
+// ============ AUDIT ============
+function runAudit(){
+  const nc=selectedCaps.size-CAPS.filter(c=>c.lock).length;
+  const hasAso=!!(val('asoIosName')||val('asoGpTitle'));
+  const checks=[
+    {l:'Template ZIP',s:'Required',ok:!!templateZip,w:false},
+    {l:'App Display Name',s:'Replaces "My Voicify"',ok:!!val('appDisplayName'),w:false},
+    {l:'Package ID valid',s:'Replaces com.voicifyai.rcinc',ok:/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){2,}$/.test(val('androidPackageId')),w:false},
+    {l:'Website URL (HTTPS)',s:'Replaces app.myvoicify.app',ok:(()=>{try{return new URL(val('websiteUrl')).protocol==='https:';}catch{return false;}})(),w:false},
+    {l:'SHA-256 fingerprint',s:'autoVerify + assetlinks.json',ok:/^([0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}$/.test(val('sha256Fingerprint')),w:true},
+    {l:`Capabilities: ${selectedCaps.size} (${nc} new)`,s:'Deps + perms injected',ok:true,w:false},
+    {l:'ASO metadata generated',s:'aso-metadata.json in ZIP',ok:hasAso,w:true},
+    {l:'AdMob Android App ID',s:'AndroidManifest.xml',ok:val('admobAndroidAppId').startsWith('ca-app-pub-'),w:false},
+    {l:'AdMob iOS App ID',s:'Info.plist',ok:val('admobIosAppId').startsWith('ca-app-pub-'),w:false},
+    {l:'AdMob Android Banner',s:'appConfig.ts',ok:val('admobAndroidBanner').startsWith('ca-app-pub-'),w:false},
+    {l:'AdMob Android Interstitial',s:'appConfig.ts',ok:val('admobAndroidInterstitial').startsWith('ca-app-pub-'),w:false},
+    {l:'AdMob iOS Banner',s:'appConfig.ts',ok:val('admobIosBanner').startsWith('ca-app-pub-'),w:false},
+    {l:'AdMob iOS Interstitial',s:'appConfig.ts',ok:val('admobIosInterstitial').startsWith('ca-app-pub-'),w:false},
+    {l:'google-services.json',s:'android/app/',ok:!!uploadedFiles['googleServicesFile'],w:true},
+    {l:'GoogleService-Info.plist',s:'ios/App/App/',ok:!!uploadedFiles['googleServicesPlist'],w:true},
+    {l:'App icon',s:'assets/branding/',ok:!!uploadedFiles['iconFile'],w:true},
+    {l:'Splash image',s:'assets/branding/',ok:!!uploadedFiles['splashFile'],w:true},
+  ];
+  const list=document.getElementById('auditList');list.innerHTML='';let fails=0,warns=0;
+  checks.forEach(c=>{if(!c.ok){c.w?warns++:fails++;}const d=document.createElement('div');d.className='audit-item';d.innerHTML=`<div class="audit-icon ${c.ok?'audit-ok':(c.w?'audit-warn':'audit-fail')}">${c.ok?'✓':(c.w?'!':'✗')}</div><div><div class="audit-text">${c.l}</div><div class="audit-sub">${c.s}</div></div>`;list.appendChild(d);});
+  const sum=document.getElementById('auditSummary');sum.style.display='block';const bb=document.getElementById('buildBtn');
+  if(!fails){sum.style.cssText='background:rgba(34,211,145,0.05);border:1px solid rgba(34,211,145,0.15);color:var(--neon);margin-top:14px;padding:12px 16px;border-radius:8px;font-size:13px;display:block;';sum.textContent=warns?'✓ Required passed. '+warns+' optional missing.':'✓ All passed — ready to build.';bb.disabled=false;}
+  else{sum.style.cssText='background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);color:var(--red);margin-top:14px;padding:12px 16px;border-radius:8px;font-size:13px;display:block;';sum.textContent='✗ '+fails+' required missing.';bb.disabled=true;}
+}
+
+// ============ INJECTION HELPERS ============
+function getNewCaps(){return CAPS.filter(c=>selectedCaps.has(c.id)&&!c.lock);}
+function injectAndroidPerms(xml){const perms=new Set();getNewCaps().forEach(c=>c.droid.forEach(p=>perms.add(p)));const lines=[...perms].filter(p=>!xml.includes(p)).map(p=>`    <uses-permission android:name="${p}" />`);if(!lines.length)return xml;const idx=xml.indexOf('<application');if(idx!==-1)return xml.slice(0,idx)+lines.join('\n')+'\n\n    '+xml.slice(idx);return xml.replace('</manifest>',lines.join('\n')+'\n</manifest>');}
+function injectIosPlist(plist){const entries=[];const seen=new Set();getNewCaps().forEach(c=>c.ios.forEach(e=>{if(!seen.has(e.k)){seen.add(e.k);entries.push(e);}}));const bgm=[];getNewCaps().forEach(c=>{if(c.bgMode)bgm.push(c.bgMode);});if(!entries.length&&!bgm.length)return plist;let inj='';entries.forEach(e=>{if(!plist.includes(e.k))inj+=`\t<key>${e.k}</key>\n\t<string>${e.v}</string>\n`;});if(bgm.length&&!plist.includes('UIBackgroundModes')){inj+=`\t<key>UIBackgroundModes</key>\n\t<array>\n`;bgm.forEach(m=>inj+=`\t\t<string>${m}</string>\n`);inj+=`\t</array>\n`;}if(!inj)return plist;const i=plist.lastIndexOf('</dict>');if(i!==-1)return plist.slice(0,i)+inj+plist.slice(i);return plist;}
+function injectPkgDeps(json){const deps={};getNewCaps().forEach(c=>{deps[c.pkg]=c.ver;});if(!Object.keys(deps).length)return json;try{const pkg=JSON.parse(json);if(!pkg.dependencies)pkg.dependencies={};Object.entries(deps).forEach(([n,v])=>{if(!pkg.dependencies[n])pkg.dependencies[n]=v;});const sorted={};Object.keys(pkg.dependencies).sort().forEach(k=>{sorted[k]=pkg.dependencies[k];});pkg.dependencies=sorted;return JSON.stringify(pkg,null,2)+'\n';}catch{return json;}}
+function injectAutoVerify(xml){
+  // Add android:autoVerify="true" to the HTTPS deep link intent-filter
+  // Target: <intent-filter> that contains scheme="https" and host="..."
+  // We need to add autoVerify to the <intent-filter> tag before it
+  const re=/(<intent-filter)(>\s*\n\s*<action android:name="android\.intent\.action\.VIEW"\s*\/>\s*\n\s*<category android:name="android\.intent\.category\.DEFAULT"\s*\/>\s*\n\s*<category android:name="android\.intent\.category\.BROWSABLE"\s*\/>\s*\n\s*<data android:scheme="https")/g;
+  if(xml.includes('autoVerify'))return xml;
+  return xml.replace(re,'$1 android:autoVerify="true"$2');
+}
+
+// ============ ZIP BUILD ============
+async function buildAndDownloadZip(){
+  const btn=document.getElementById('buildZipBtn');btn.disabled=true;btn.textContent='⟳ Building…';
+  const pa=document.getElementById('buildProgress');pa.style.display='block';
+  const steps=['Extracting template…','Replacing identity…','Replacing URLs…','Replacing AdMob…','Injecting plugins…','Injecting Android perms…','Injecting iOS plist…','Injecting autoVerify + assetlinks…','Relocating Java files…','Swapping Firebase…','Swapping branding…','Adding ASO metadata…','Compressing ZIP…'];
+  pa.innerHTML=steps.map((s,i)=>`<div class="build-step" id="bs-${i}"><div class="build-dot"></div>${s}</div>`).join('');
+  let si=0;async function ms(){if(si>0){document.getElementById('bs-'+(si-1)).classList.remove('active');document.getElementById('bs-'+(si-1)).classList.add('done');}if(si<steps.length)document.getElementById('bs-'+si).classList.add('active');si++;await new Promise(r=>setTimeout(r,50));}
+
+  const np=val('androidPackageId'),na=val('appDisplayName'),nu=val('websiteUrl');
+  let nh;try{nh=new URL(nu).hostname;}catch{nh='app.example.com';}
+  const nvc=val('versionCode')||'1',nvn=val('versionName')||'1.0',njd=np.replace(/\./g,'/');
+  const nad={android:{appId:val('admobAndroidAppId'),banner:val('admobAndroidBanner'),interstitial:val('admobAndroidInterstitial')},ios:{appId:val('admobIosAppId'),banner:val('admobIosBanner'),interstitial:val('admobIosInterstitial')}};
+  const out=new JSZip();const mods={};
+
+  await ms();// Extract
+  const allPaths=Object.keys(templateZip.files).filter(p=>!p.startsWith('__MACOSX')&&!templateZip.files[p].dir);
+  let pfx='';const f0=allPaths[0]||'';if(f0.includes('/'))pfx=f0.substring(0,f0.indexOf('/')+1);
+  const skip=['/android/app/build/','/android/.gradle/','/.idea/','.DS_Store','.dex','.class'];
+  const textExt=['.ts','.tsx','.js','.json','.xml','.java','.gradle','.plist','.html','.md','.txt','.properties','.cfg'];
+  function isText(p){return textExt.some(e=>p.toLowerCase().endsWith(e));}
+
+  await ms();await ms();await ms();await ms();await ms();await ms();// Steps 1-6
+
+  await ms();// Step 7: Process files
+  for(const path of allPaths){
+    if(skip.some(s=>path.includes(s)))continue;
+    const rel=pfx?path.replace(pfx,''):path;const file=templateZip.files[path];
+    const oldJava=`android/app/src/main/java/${T.javaDir}/`;
+    let newRel=rel;if(rel.includes(oldJava))newRel=rel.replace(oldJava,`android/app/src/main/java/${njd}/`);
+    if(isText(path)){
+      let c=await file.async('string');const orig=c;
+      c=c.replaceAll(T.pkg,np);c=c.replaceAll(T.appName,na);c=c.replaceAll(T.url,nu);c=c.replaceAll(T.host,nh);
+      c=c.replaceAll(T.admob.android.appId,nad.android.appId);c=c.replaceAll(T.admob.ios.appId,nad.ios.appId);
+      c=c.replaceAll(T.admob.android.banner,nad.android.banner);c=c.replaceAll(T.admob.android.interstitial,nad.android.interstitial);
+      c=c.replaceAll(T.admob.ios.banner,nad.ios.banner);c=c.replaceAll(T.admob.ios.interstitial,nad.ios.interstitial);
+      if(rel.endsWith('android/app/build.gradle')){c=c.replace(/versionCode \d+/,'versionCode '+nvc);c=c.replace(/versionName "[^"]*"/,'versionName "'+nvn+'"');}
+      if(rel.includes('admob-remote-bootstrap.js')){c=c.replace(/var HOST = '[^']*'/,"var HOST = '"+nh+"'");c=c.replace(/__voicify_admob_launch_interstitial_done/,'__'+np.replace(/\./g,'_')+'_admob_launch_interstitial_done');}
+      if(rel==='android/app/src/main/AndroidManifest.xml'){c=injectAndroidPerms(c);c=injectAutoVerify(c);}
+      if(rel==='ios/App/App/Info.plist')c=injectIosPlist(c);
+      if(rel==='package.json')c=injectPkgDeps(c);
+      out.file(pfx+newRel,c);if(c!==orig)mods[newRel]=c;
+    }else{out.file(pfx+newRel,await file.async('arraybuffer'));}
+  }
+
+  await ms();// autoVerify + assetlinks
+  const sha=val('sha256Fingerprint');
+  if(sha){
+    const assetlinksContent=JSON.stringify([{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":np,"sha256_cert_fingerprints":[sha]}}],null,2);
+    out.file(pfx+'public/.well-known/assetlinks.json',assetlinksContent);
+    out.file(pfx+'assetlinks.json',assetlinksContent);
+    mods['public/.well-known/assetlinks.json']=assetlinksContent;
+  }
+
+  await ms();// Firebase
+  if(uploadedFiles['googleServicesFile'])out.file(pfx+'android/app/google-services.json',uploadedFiles['googleServicesFile'].data);
+  if(uploadedFiles['googleServicesPlist'])out.file(pfx+'ios/App/App/GoogleService-Info.plist',uploadedFiles['googleServicesPlist'].data);
+
+  await ms();// Branding
+  if(uploadedFiles['iconFile']){out.file(pfx+'assets/branding/icon-1024.png',uploadedFiles['iconFile'].data);out.file(pfx+'assets/logo.png',uploadedFiles['iconFile'].data);}
+  if(uploadedFiles['splashFile']){out.file(pfx+'assets/branding/splash-2732.png',uploadedFiles['splashFile'].data);out.file(pfx+'assets/splash.png',uploadedFiles['splashFile'].data);}
+
+  await ms();// ASO metadata
+  const asoMeta=getAsoMetadataJson();
+  if(Object.keys(asoMeta).length){
+    out.file(pfx+'aso-metadata.json',JSON.stringify(asoMeta,null,2));
+    out.file(pfx+'aso-metadata.md',getAsoMetadataMd());
+  }
+
+  await ms();// Compress
+  const blob=await out.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  document.getElementById('bs-'+(si-1)).classList.remove('active');document.getElementById('bs-'+(si-1)).classList.add('done');
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(na||'app').toLowerCase().replace(/[^a-z0-9]/g,'-')+'-configured.zip';a.click();
+  btn.textContent='✓ Downloaded!';btn.disabled=false;setTimeout(()=>{btn.textContent='⬇ Build & Download ZIP';},3000);
+
+  const fp=document.getElementById('filePreviewArea');fp.innerHTML='';
+  const pk=Object.keys(mods).slice(0,25);
+  if(!pk.length)fp.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No modifications.</div>';
+  else pk.forEach(n=>{const t=document.createElement('div');t.className='file-preview-title';t.textContent='📄 '+n;const b=document.createElement('div');b.className='file-preview-panel';b.style.display='none';b.textContent=mods[n];t.onclick=()=>b.style.display=b.style.display==='none'?'block':'none';fp.appendChild(t);fp.appendChild(b);});
+
+  // Show assetlinks deploy panel
+  if(sha){
+    const dp=document.getElementById('assetlinksDeployPanel');dp.style.display='block';
+    document.getElementById('assetlinksDeployUrl').textContent='https://'+nh+'/.well-known/assetlinks.json';
+    document.getElementById('assetlinksDeployJson').textContent=JSON.stringify([{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":np,"sha256_cert_fingerprints":[sha]}}],null,2);
+    document.getElementById('assetlinksVerifyUrl').textContent='https://'+nh+'/.well-known/assetlinks.json';
+  }
+}
+
+// ============ INIT ============
+updProgress();buildCapUI();loadAsoKeys();
+</script>
+</body>
+</html>
